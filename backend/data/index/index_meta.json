@@ -1,7 +1,0 @@
-{
-  "embedding_dim": 384,
-  "model": "sentence-transformers/all-MiniLM-L6-v2",
-  "build_timestamp": 1783063351.1276782,
-  "num_vectors": 18,
-  "num_chunks": 18
-}
