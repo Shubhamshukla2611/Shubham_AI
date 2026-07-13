@@ -1,0 +1,57 @@
+# ──────────────────────────────────────────────
+# Web Framework
+# ──────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# ──────────────────────────────────────────────
+# Configuration & Validation
+# ──────────────────────────────────────────────
+pydantic==2.10.4
+pydantic-settings==2.7.0
+python-dotenv==1.0.1
+
+# ──────────────────────────────────────────────
+# LLM (Groq)
+# ──────────────────────────────────────────────
+groq>=1.0.0
+
+# ──────────────────────────────────────────────
+# Embeddings (local — sentence-transformers / MiniLM)
+# ──────────────────────────────────────────────
+sentence-transformers==3.2.1
+torch>=2.6.0,<3.0
+
+# ──────────────────────────────────────────────
+# Vector Store (ChromaDB)
+# ──────────────────────────────────────────────
+chromadb>=1.5.9
+
+# ──────────────────────────────────────────────
+# Document Loading
+# ──────────────────────────────────────────────
+pypdf==5.1.0
+python-docx==1.1.2
+markdown==3.7
+
+# ──────────────────────────────────────────────
+# Voice Agent (Vapi, Google Calendar)
+# ──────────────────────────────────────────────
+vapi-python>=0.1.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.120.0
+
+# ──────────────────────────────────────────────
+# Utilities
+# ──────────────────────────────────────────────
+tenacity==9.0.0
+
+# ──────────────────────────────────────────────
+# Voice Typing (audio transcription)
+# ──────────────────────────────────────────────
+# Default engine is Groq's hosted Whisper (whisper-large-v3-turbo) which
+# reuses GROQ_API_KEY. Install faster-whisper only if you want a fully
+# offline fallback (set WHISPER_ENGINE=local in .env to use it).
+# faster-whisper==1.0.3

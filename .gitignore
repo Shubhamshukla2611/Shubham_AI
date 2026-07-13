@@ -1,0 +1,73 @@
+# ──────────────────────────────────────────────
+# Environment & Secrets
+# ──────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+
+# ──────────────────────────────────────────────
+# Python
+# ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# ──────────────────────────────────────────────
+# FAISS Index & Local Data (regenerate via scripts/ingest.py)
+# ──────────────────────────────────────────────
+backend/data/index/*
+!backend/data/index/.gitkeep
+
+# Keep raw data folder but ignore its contents (resume is private)
+backend/data/raw/*
+!backend/data/raw/.gitkeep
+
+# ──────────────────────────────────────────────
+# Node / Frontend
+# ──────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+*.tsbuildinfo
+*.local
+# Vite reads .env.development explicitly, but it isn't matched by .env.*.local
+frontend/.env.development
+
+# ──────────────────────────────────────────────
+# IDE & OS
+# ──────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ──────────────────────────────────────────────
+# Logs
+# ──────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
