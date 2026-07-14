@@ -28,8 +28,8 @@ build/
 # ──────────────────────────────────────────────
 # FAISS Index & Local Data (regenerate via scripts/ingest.py)
 # ──────────────────────────────────────────────
-backend/data/index/*
-!backend/data/index/.gitkeep
+#backend/data/index/*
+#!backend/data/index/.gitkeep
 
 # Keep raw data folder but ignore its contents (resume is private)
 backend/data/raw/*
