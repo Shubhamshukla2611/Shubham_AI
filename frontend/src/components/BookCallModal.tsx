@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Same env handling as services/api.ts — use VITE_API_URL in production
+const RAW_API_BASE_URL = (import.meta.env.VITE_API_URL || "").trim();
+const API_BASE_URL = RAW_API_BASE_URL.replace(/\/$/, "").replace(/\/api$/, "");
+
 interface BookCallModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -51,7 +55,7 @@ export function BookCallModal({
     setLoading(true);
     try {
       // Log booking request to backend
-      await fetch("http://localhost:8000/api/voice/call-summary", {
+      await fetch(`${API_BASE_URL}/api/voice/call-summary`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -141,7 +145,8 @@ export function BookCallModal({
                           background: theme.inputBg,
                           borderColor: theme.cardBorder,
                           color: theme.text,
-                          focusRingColor: theme.accent,
+                          // CSS custom property for focus ring color
+                          ["--tw-ring-color" as any]: theme.accent,
                         }}
                       />
                     </div>

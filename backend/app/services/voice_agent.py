@@ -9,7 +9,7 @@ This service:
 """
 
 from __future__ import annotations
-
+from app.api.chat import _get_rag_pipeline
 import json
 from datetime import datetime
 from typing import Any, Optional
@@ -230,35 +230,27 @@ When the caller wants to schedule:
                 "Can I get your email so Shubham can reach out to coordinate directly?"
             )
 
+    
+
     def _handle_get_profile_info(self, parameters: dict) -> str:
-        """Retrieve profile information from RAG or fallback."""
-        topic = parameters.get("topic", "").lower()
+        """Retrieve profile information from RAG chatbot."""
+        topic = parameters.get("topic", "")
 
-        # This would normally query the RAG system for rich profile data
-        # For now, return a curated summary
+        try:
+            rag = _get_rag_pipeline()
 
-        summaries = {
-            "background": (
-                "Shubham is a full-stack AI engineer with 3+ years of experience "
-                "building production machine learning systems and voice AI products. "
-                "He specializes in LLMs, retrieval-augmented generation, and real-time systems."
-            ),
-            "skills": (
-                "His core skills include Python, TypeScript, FastAPI, React, LLM orchestration, "
-                "vector databases, embeddings, speech-to-text, and deployment at scale. "
-                "He's proficient with tools like Groq, ChromaDB, Vapi, and AWS."
-            ),
-            "experience": (
-                "Shubham has led projects ranging from RAG chatbots to voice agents to real-time "
-                "search systems. He's experienced with both early-stage startups and scaling systems for production."
-            ),
-            "projects": (
-                "Recent projects include this AI persona voice agent system, a RAG-powered knowledge "
-                "base platform, and several real-time ML inference pipelines."
-            ),
-        }
+            result = rag.answer(topic)
 
-        return summaries.get(topic, summaries.get("background"))
+            return result.get(
+                "answer",
+                "I Could not find that information"
+            )
+        except Exception as e:
+            logger.error(f"RAG lookup failed: {e}")
+            return (
+                "I'm having trouble accessing "
+                "Shubham's profile information right now."
+            )
 
     def create_vapi_assistant_config(self) -> dict:
         """Generate the Vapi assistant configuration."""
