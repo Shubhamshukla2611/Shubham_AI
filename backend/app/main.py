@@ -1,25 +1,15 @@
 """
 FastAPI application entrypoint.
-
-This file wires up:
-    - CORS (allows the Vite dev server and same-origin production frontend)
-  - A `lifespan` context manager for startup/shutdown logging
-  - Global exception handlers (no leaked tracebacks)
-    - An `/api` endpoint with API info
-    - A `/health` endpoint for container health checks
-  - The chat router (mounted under /api)
 """
 
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from app.api.chat import router as chat_router
@@ -30,7 +20,6 @@ from app.core.logging import configure_logging, get_logger
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """Run startup and shutdown tasks around the app's lifetime."""
     settings = get_settings()
     configure_logging(settings.log_level)
     logger = get_logger(__name__)
@@ -57,7 +46,6 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
-    """Application factory."""
     settings = get_settings()
     logger = get_logger(__name__)
 
@@ -71,9 +59,6 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # ─── CORS ─────────────────────────────────────────────────────────────
-    # Allow the Vite dev server and any deployed frontend origins.
-    # In production, ALLOWED_ORIGINS should include the browser origin.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins_list,
@@ -82,12 +67,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # ─── Exception Handlers ───────────────────────────────────────────────
     @app.exception_handler(ValidationError)
     async def validation_exception_handler(
         _request: Request, exc: ValidationError
     ) -> JSONResponse:
-        """Pydantic validation errors → clean 422 response."""
         logger.warning("Validation error: %s", exc.errors())
         return JSONResponse(
             status_code=422,
@@ -99,8 +82,9 @@ def create_app() -> FastAPI:
         )
 
     @app.exception_handler(ValueError)
-    async def value_error_handler(_request: Request, exc: ValueError) -> JSONResponse:
-        """Domain errors (e.g. missing API key) → clean 400 response."""
+    async def value_error_handler(
+        _request: Request, exc: ValueError
+    ) -> JSONResponse:
         logger.warning("ValueError: %s", exc)
         return JSONResponse(
             status_code=400,
@@ -111,7 +95,6 @@ def create_app() -> FastAPI:
     async def unhandled_exception_handler(
         _request: Request, exc: Exception
     ) -> JSONResponse:
-        """Catch-all → 500 with no leaked traceback. The full error is logged."""
         logger.exception("Unhandled exception: %s", exc)
         return JSONResponse(
             status_code=500,
@@ -121,10 +104,8 @@ def create_app() -> FastAPI:
             },
         )
 
-    # ─── Routes ───────────────────────────────────────────────────────────
     @app.get("/api", tags=["meta"])
     async def api_info() -> dict:
-        """API information and quick links."""
         return {
             "name": "AI Persona Chatbot",
             "version": "0.1.0",
@@ -141,7 +122,6 @@ def create_app() -> FastAPI:
 
     @app.get("/health", tags=["meta"])
     async def healthcheck() -> dict:
-        """Health check endpoint for deployment platforms."""
         return {
             "status": "ok",
             "env": settings.app_env,
@@ -150,10 +130,6 @@ def create_app() -> FastAPI:
 
     app.include_router(chat_router)
     app.include_router(voice_router)
-
-    frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
-    if frontend_dist.exists():
-        app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
 
     logger.info("Application created | routes registered")
     return app
