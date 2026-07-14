@@ -15,6 +15,10 @@ ENV PORT=8000
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential portaudio19-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY backend/requirements.txt ./backend/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r backend/requirements.txt
 
