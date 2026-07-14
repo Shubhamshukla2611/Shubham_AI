@@ -355,3 +355,6 @@ MIT
 ## Author
 
 Shubham Shukla — [shubhamshu382@gmail.com](mailto:shubhamshu382@gmail.com)
+
+## Live at 
+https://shubham-ai-omega.vercel.app/
