@@ -47,8 +47,12 @@ RUN pip install --upgrade pip && \
 COPY requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
-# Copy the rest of the backend source.
-COPY . /app/backend/
+# Copy the rest of the backend source. We use the explicit "backend/"
+# prefix so this works whether the build context is the repo root
+# (render.yaml: dockerContext: .) OR the backend/ folder itself
+# (render.yaml: dockerContext: backend). The /app/backend/...
+# working layout below stays consistent either way.
+COPY backend/ /app/backend/
 
 # Render expects the working directory of the app to be explicit.
 WORKDIR /app/backend
