@@ -17,7 +17,8 @@ services:
     runtime: docker
     plan: starter              # 512 MB RAM, 0.5 CPU. Free tier.
     dockerfilePath: backend/Dockerfile
-    dockerContext: .
+    dockerContext: backend      # build context is the backend/ folder
+    dockerCommand: sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"
     healthCheckPath: /health
     autoDeploy: true
 
