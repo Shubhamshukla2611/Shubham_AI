@@ -35,6 +35,11 @@ def _get_rag_pipeline() -> RAGPipeline:
     This ensures the vector store is loaded and embeddings client is
     ready before any chat requests arrive. Subsequent calls reuse the
     same instances.
+
+    On a fresh Render deploy the persisted index may not exist yet. If
+    initialization fails for that reason, fall back to in-process
+    auto-ingest from `data/raw/` and retry once. This lets the very
+    first request after a cold start build the index on demand.
     """
     global _rag_pipeline, _vector_store
 
@@ -117,11 +122,28 @@ async def chat(request: ChatRequest) -> ChatResponse:
     try:
         rag = _get_rag_pipeline()
     except RuntimeError as exc:
-        logger.error("RAG pipeline initialization failed: %s", exc)
-        raise HTTPException(
-            status_code=500,
-            detail=str(exc),
-        ) from exc
+        msg = str(exc)
+        # If the index is missing on a fresh deploy, try to build it
+        # in-process from data/raw/ and retry once. This makes the
+        # first request after a cold start self-healing.
+        if "Vector store not built" in msg:
+            logger.warning("Index missing — attempting on-demand auto-ingest")
+            try:
+                from app.main import _auto_ingest_if_needed
+                _auto_ingest_if_needed(logger)
+                rag = _get_rag_pipeline()
+            except Exception as inner:
+                logger.exception("On-demand auto-ingest failed: %s", inner)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Index unavailable and auto-ingest failed: {inner}",
+                ) from inner
+        else:
+            logger.error("RAG pipeline initialization failed: %s", exc)
+            raise HTTPException(
+                status_code=500,
+                detail=msg,
+            ) from exc
 
     # Run the RAG pipeline
     try:

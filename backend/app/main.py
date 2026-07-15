@@ -164,9 +164,30 @@ def _auto_ingest_if_needed(logger) -> None:
     raw_dir = backend_root / "data" / "raw"
     index_dir = backend_root / "data" / "index"
 
-    if not raw_dir.exists() or not any(raw_dir.glob("*.md")) and not any(raw_dir.glob("*.pdf")):
-        logger.info("No source documents in %s — skipping auto-ingest", raw_dir)
-        return
+    # Fallback for /app working dir layouts.
+    if not raw_dir.exists():
+        alt_raw = Path("/app/backend/data/raw")
+        if alt_raw.exists():
+            raw_dir = alt_raw
+    if not index_dir.exists():
+        alt_idx = Path("/app/backend/data/index")
+        if alt_idx.parent.exists():
+            index_dir = alt_idx
+
+    logger.info(
+        "Auto-ingest probe | raw_dir=%s exists=%s index_dir=%s exists=%s",
+        raw_dir, raw_dir.exists(), index_dir, index_dir.exists(),
+    )
+
+    raw_files = (
+        list(raw_dir.glob("*.md")) + list(raw_dir.glob("*.pdf"))
+        if raw_dir.exists() else []
+    )
+    if not raw_files:
+        logger.error("No source documents in %s — cannot auto-ingest", raw_dir)
+        raise RuntimeError(f"No source documents in {raw_dir}")
+
+    logger.info("Auto-ingest: %d source files found | %s", len(raw_files), [p.name for p in raw_files])
 
     index_dir.mkdir(parents=True, exist_ok=True)
     probe = VectorStore(index_dir=index_dir, embedding_dim=settings.embedding_dim)
@@ -193,6 +214,8 @@ def _auto_ingest_if_needed(logger) -> None:
     )
     if not chunks:
         raise RuntimeError("Chunker produced 0 chunks")
+
+    logger.info("Auto-ingest: chunked into %d chunks", len(chunks))
 
     embeddings_client = EmbeddingsClient(
         model=settings.embedding_model,
