@@ -3,6 +3,8 @@ FastAPI application entrypoint.
 """
 
 from __future__ import annotations
+from app.api.chat import _get_rag_pipeline
+
 
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
@@ -39,6 +41,13 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     logger.info("  Retrieval top-k:   %d", settings.retrieval_top_k)
     logger.info("  CORS:              %s", settings.allowed_origins_list)
     logger.info("=" * 60)
+
+    try:
+        _get_rag_pipeline()
+        logger.info("RAG pipeline initialized successfully")
+    except Exception as e:
+        logger.exception(f"Failed to initialize RAG pipeline: {e}")
+        
 
     yield
 
