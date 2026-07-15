@@ -22,11 +22,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# OS deps: build-essential for sentence-transformers / tokenizers wheels,
-# libgomp1 for OpenMP-backed torch.
+# OS deps:
+#   - build-essential / gcc: build wheels for sentence-transformers, etc.
+#   - libgomp1: OpenMP runtime for torch.
+#   - portaudio19-dev: needed by pyaudio (Vapi dependency).
+#   - ffmpeg: audio transcoding for voice / media endpoints.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
+        gcc \
         libgomp1 \
+        portaudio19-dev \
+        ffmpeg \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
