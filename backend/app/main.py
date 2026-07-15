@@ -3,10 +3,9 @@ FastAPI application entrypoint.
 """
 
 from __future__ import annotations
-from app.api.chat import _get_rag_pipeline
-
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI, Request
@@ -14,10 +13,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
-from app.api.chat import router as chat_router
+from app.api.chat import _get_rag_pipeline, router as chat_router
 from app.api.voice import router as voice_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
+from app.services.vector_store import VectorStore
 
 
 @asynccontextmanager
@@ -46,8 +46,16 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         _get_rag_pipeline()
         logger.info("RAG pipeline initialized successfully")
     except Exception as e:
-        logger.exception(f"Failed to initialize RAG pipeline: {e}")
-        
+        # Most common cause on a fresh Render deploy: the persistent disk
+        # is empty so the Chroma index has not been built yet. Try to
+        # build it from /app/backend/data/raw on the fly.
+        logger.warning("RAG pipeline init failed: %s", e)
+        try:
+            _auto_ingest_if_needed(logger)
+            _get_rag_pipeline()
+            logger.info("RAG pipeline initialized after auto-ingest")
+        except Exception as inner:
+            logger.exception("Auto-ingest failed: %s", inner)
 
     yield
 
@@ -142,6 +150,65 @@ def create_app() -> FastAPI:
 
     logger.info("Application created | routes registered")
     return app
+
+
+def _auto_ingest_if_needed(logger) -> None:
+    """Build the Chroma index from data/raw if one is not yet on disk.
+
+    Triggered on first deploy to a fresh Render persistent disk. Mirrors
+    the logic in scripts/ingest.py but invoked in-process so the app can
+    recover without a manual `python scripts/ingest.py` step.
+    """
+    settings = get_settings()
+    backend_root = Path(__file__).resolve().parent.parent
+    raw_dir = backend_root / "data" / "raw"
+    index_dir = backend_root / "data" / "index"
+
+    if not raw_dir.exists() or not any(raw_dir.glob("*.md")) and not any(raw_dir.glob("*.pdf")):
+        logger.info("No source documents in %s — skipping auto-ingest", raw_dir)
+        return
+
+    index_dir.mkdir(parents=True, exist_ok=True)
+    probe = VectorStore(index_dir=index_dir, embedding_dim=settings.embedding_dim)
+    if probe.is_built:
+        logger.info("Chroma index already present on disk — skipping auto-ingest")
+        return
+
+    logger.info("Auto-ingest: building Chroma index from %s", raw_dir)
+
+    # Import here so the function is optional and avoids pulling the
+    # ingestion pipeline into the request path on every cold start.
+    from app.services.chunker import chunk_documents
+    from app.services.document_loader import load_documents
+    from app.services.embeddings import EmbeddingsClient
+
+    documents = load_documents(raw_dir)
+    if not documents:
+        raise RuntimeError(f"No documents loaded from {raw_dir}")
+
+    chunks = chunk_documents(
+        documents,
+        chunk_size=settings.chunk_size,
+        chunk_overlap=settings.chunk_overlap,
+    )
+    if not chunks:
+        raise RuntimeError("Chunker produced 0 chunks")
+
+    embeddings_client = EmbeddingsClient(
+        model=settings.embedding_model,
+        dim=settings.embedding_dim,
+    )
+    embeddings_client.warmup()  # ensures model is loaded before batch encode
+
+    vectors: list[list[float]] = []
+    batch_size = EmbeddingsClient.DEFAULT_BATCH_SIZE
+    for start in range(0, len(chunks), batch_size):
+        batch = chunks[start:start + batch_size]
+        vectors.extend(embeddings_client.embed_texts([c.text for c in batch]))
+
+    store = VectorStore(index_dir=index_dir, embedding_dim=settings.embedding_dim)
+    store.build(chunks=chunks, embeddings=vectors)
+    logger.info("Auto-ingest complete | chunks=%d", len(chunks))
 
 
 app = create_app()

@@ -1,0 +1,52 @@
+# Version control
+.git
+.gitignore
+
+# Virtualenvs
+.venv
+venv
+env
+ENV
+.venv/
+backend/.venv/
+
+# Python caches
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Node / frontend (backend image only)
+node_modules
+frontend
+frontend/**
+frontend/dist
+frontend/.vite
+frontend/*.tsbuildinfo
+
+# Env / secrets (Render injects envs; do not bake them in)
+.env
+.env.*
+backend/.env
+backend/.env.*
+
+# Logs
+*.log
+backend/backend.log
+backend/server.log
+backend/server_output.log
+
+# Local index caches — do NOT ship a stale Chroma index inside the image.
+# Render mounts a persistent disk and the app rebuilds / reads at runtime.
+data/index/chroma
+data/index/index_meta.json
+
+# IDE / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db

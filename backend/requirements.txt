@@ -19,9 +19,11 @@ groq>=1.0.0
 
 # ──────────────────────────────────────────────
 # Embeddings (local — sentence-transformers / MiniLM)
+# torch is installed CPU-only inside the Dockerfile so the build stays
+# under Render's build-time memory budget.
 # ──────────────────────────────────────────────
 sentence-transformers==3.2.1
-torch>=2.6.0,<3.0
+torch==2.6.0
 
 # ──────────────────────────────────────────────
 # Vector Store (ChromaDB)
@@ -47,11 +49,3 @@ google-api-python-client==2.120.0
 # Utilities
 # ──────────────────────────────────────────────
 tenacity==9.0.0
-
-# ──────────────────────────────────────────────
-# Voice Typing (audio transcription)
-# ──────────────────────────────────────────────
-# Default engine is Groq's hosted Whisper (whisper-large-v3-turbo) which
-# reuses GROQ_API_KEY. Install faster-whisper only if you want a fully
-# offline fallback (set WHISPER_ENGINE=local in .env to use it).
-# faster-whisper==1.0.3

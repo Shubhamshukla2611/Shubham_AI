@@ -1,0 +1,90 @@
+# ──────────────────────────────────────────────
+# Render Blueprint — Shubham AI Backend
+# ──────────────────────────────────────────────
+# Use this from the Render dashboard:
+#   New → Blueprint → connect this repo → Render reads render.yaml.
+#
+# What this gives you:
+#   - A Docker Web Service running FastAPI on Render's $PORT.
+#   - A 1 GB persistent disk mounted at /app/data so the ChromaDB
+#     index survives deploys and restarts.
+#   - All required env vars (you paste secrets in the Render UI).
+# ──────────────────────────────────────────────
+
+services:
+  - type: web
+    name: shubham-ai-backend
+    runtime: docker
+    plan: starter              # 512 MB RAM, 0.5 CPU. Free tier.
+    dockerfilePath: backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+
+    # NOTE: persistent disks require a paid plan on Render (Standard+).
+    # On the Starter plan, the Chroma index is rebuilt on every cold
+    # start by the app's auto-ingest hook (~10-20s on the MiniLM cache
+    # being warm). Upgrade to Standard + add a disk below to skip the
+    # rebuild on each deploy.
+    # disk:
+    #   name: shubham-ai-data
+    #   mountPath: /app/backend/data
+    #   sizeGB: 1
+
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+
+      # ── LLM ────────────────────────────────────────────────────────
+      - key: GROQ_API_KEY
+        sync: false             # paste from https://console.groq.com/keys
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+
+      # ── Embeddings (local) ─────────────────────────────────────────
+      - key: EMBEDDING_MODEL
+        value: sentence-transformers/all-MiniLM-L6-v2
+      - key: EMBEDDING_DIM
+        value: "384"
+
+      # ── RAG ────────────────────────────────────────────────────────
+      - key: RETRIEVAL_TOP_K
+        value: "3"
+      - key: CHUNK_SIZE
+        value: "1500"
+      - key: CHUNK_OVERLAP
+        value: "300"
+      - key: MIN_SCORE
+        value: "0.18"
+
+      # ── Booking ────────────────────────────────────────────────────
+      - key: GOOGLE_CALENDAR_URL
+        value: https://calendar.app.google/GQ3M1pXChb47p69b8
+      - key: GOOGLE_MEET_URL
+        value: https://meet.google.com/new
+      - key: OWNER_EMAIL
+        value: shubhamshu382@gmail.com
+      - key: INTERVIEWER_EMAIL
+        value: ""
+
+      # ── Voice (Vapi + Google Calendar service account) ─────────────
+      - key: VAPI_API_KEY
+        sync: false
+      - key: VAPI_ASSISTANT_ID
+        value: f72ab51b-fe01-456a-b5e8-06c6aec69432
+      - key: VAPI_PHONE_NUMBER_ID
+        value: d2d4d866-1953-41a5-b02d-2adce5377c78
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: VOICE_WEBHOOK_SECRET
+        generateValue: true       # Render auto-fills a random secret
+
+      # ── Google Calendar service-account JSON (single line) ─────────
+      - key: GOOGLE_CALENDAR_CREDENTIALS_JSON
+        sync: false
+
+      # ── CORS — add your Vercel frontend here ──────────────────────
+      - key: ALLOWED_ORIGINS
+        value: https://shubham-ai-omega.vercel.app,http://localhost:5173,http://localhost:3000
