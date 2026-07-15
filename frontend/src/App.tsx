@@ -127,7 +127,7 @@ function App() {
 
   return (
     <div
-      className="relative min-h-screen overflow-hidden px-3 py-3 text-slate-900 sm:px-4 sm:py-4 lg:px-6 lg:py-6"
+      className="relative min-h-[100dvh] overflow-hidden px-2 py-0 text-slate-900 sm:px-4 sm:py-4 lg:px-6 lg:py-6"
       style={{ background: theme.background }}
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -141,7 +141,7 @@ function App() {
         />
       </div>
 
-      <div className="relative mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-6xl items-center justify-center">
+      <div className="relative mx-auto flex min-h-[calc(100dvh-0.5rem)] max-w-6xl items-stretch justify-center sm:min-h-[calc(100dvh-2rem)] sm:items-center sm:justify-center">
         <div className="w-full max-w-[560px]">
           <ChatContainer theme={theme} onThemeChange={setThemeName} />
         </div>

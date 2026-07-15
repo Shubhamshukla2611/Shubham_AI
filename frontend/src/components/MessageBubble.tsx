@@ -53,11 +53,11 @@ export function MessageBubble({ message, theme }: MessageBubbleProps) {
       className={`mb-5 flex ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={`flex max-w-[92%] gap-2.5 sm:max-w-[82%] ${isUser ? "flex-row-reverse" : "flex-row"}`}
+        className={`flex max-w-[88%] gap-2 sm:max-w-[82%] sm:gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}
       >
         {/* Avatar */}
         <div
-          className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] text-sm font-semibold"
+          className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px] text-xs font-semibold sm:h-9 sm:w-9 sm:rounded-[14px] sm:text-sm"
           style={{
             background: isUser
               ? `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentTwo} 100%)`
@@ -72,7 +72,7 @@ export function MessageBubble({ message, theme }: MessageBubbleProps) {
         <div className={`min-w-0 flex-1 ${isUser ? "text-right" : "text-left"}`}>
           {/* Bubble */}
           <div
-            className="inline-block max-w-full rounded-[22px] px-4 py-3.5 text-left sm:px-5"
+            className="inline-block max-w-full rounded-[18px] px-3.5 py-3 text-left sm:rounded-[22px] sm:px-5 sm:py-3.5"
             style={{
               background: isUser ? theme.userBg : theme.assistantBg,
               color: isUser ? theme.userText : theme.assistantText,
@@ -100,7 +100,7 @@ export function MessageBubble({ message, theme }: MessageBubbleProps) {
 
             {/* Body */}
             <div
-              className="markdown-body break-words text-[14.5px] leading-7"
+              className="markdown-body break-words text-[14px] leading-6 sm:text-[14.5px] sm:leading-7"
               style={{ color: isUser ? theme.userText : theme.assistantText }}
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
@@ -108,7 +108,7 @@ export function MessageBubble({ message, theme }: MessageBubbleProps) {
 
             {/* Sources (assistant only) */}
             {!isUser && message.sources && message.sources.length > 0 && (
-              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+              <div className="mt-3 grid gap-2 sm:mt-4 sm:grid-cols-2 sm:gap-2.5">
                 {message.sources.map((source, idx) => (
                   <div
                     key={idx}
@@ -148,12 +148,12 @@ export function MessageBubble({ message, theme }: MessageBubbleProps) {
 
             {/* Booking CTA (assistant only) */}
             {!isUser && message.booking_url && (
-              <div className="mt-4 space-y-2">
+              <div className="mt-3 space-y-2 sm:mt-4">
                 <a
                   href={message.booking_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all hover:-translate-y-0.5 sm:px-4 sm:py-2 sm:text-sm"
                   style={{
                     borderColor: `${theme.accent}20`,
                     background: theme.accentSoft,

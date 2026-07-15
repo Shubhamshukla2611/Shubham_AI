@@ -114,7 +114,7 @@ export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
 
   return (
     <div
-      className="flex h-[92vh] max-h-[900px] flex-col overflow-hidden rounded-[32px] border p-2 shadow-[12px_12px_24px_rgba(15,23,42,0.10)] backdrop-blur-xl"
+      className="flex h-[100dvh] flex-col overflow-hidden rounded-none border p-1.5 shadow-[12px_12px_24px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:h-[92vh] sm:max-h-[900px] sm:rounded-[32px] sm:p-2"
       style={{
         background: theme.shell,
         borderColor: `${theme.accent}20`,
@@ -122,37 +122,38 @@ export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
       }}
     >
       <div
-        className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-4 sm:px-5"
+        className="sticky top-0 z-10 flex items-center justify-between border-b px-3 py-3 sm:px-5 sm:py-4"
         style={{ borderColor: `${theme.accent}18`, background: `${theme.shell}f0` }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           <div
-            className="flex h-12 w-12 items-center justify-center rounded-[20px] text-lg font-semibold"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] text-base font-semibold sm:h-12 sm:w-12 sm:rounded-[20px] sm:text-lg"
             style={{ background: theme.accentSoft, color: theme.accent, boxShadow: theme.insetShadow }}
           >
             S
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold" style={{ color: theme.text }}>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <h1 className="truncate text-base font-semibold sm:text-lg" style={{ color: theme.text }}>
                 Shubham AI
               </h1>
-              <span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ background: theme.online }} />
+              <span className="inline-flex h-2 w-2 shrink-0 rounded-full sm:h-2.5 sm:w-2.5" style={{ background: theme.online }} />
             </div>
-            <p className="text-sm" style={{ color: theme.muted }}>
+            <p className="hidden truncate text-[11px] sm:block sm:text-sm" style={{ color: theme.muted }}>
               AI Representative · Online
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-full border p-1" style={{ borderColor: `${theme.accent}18`, background: theme.card }}>
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-0.5 rounded-full border p-0.5 sm:gap-1 sm:p-1" style={{ borderColor: `${theme.accent}18`, background: theme.card }}>
             {(["light", "dark"] as const).map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => onThemeChange(option)}
-                className="rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-all"
+                aria-label={option === "light" ? "Light theme" : "Dark theme"}
+                className="rounded-full px-2 py-1 text-[10px] font-medium transition-all sm:px-2.5 sm:py-1.5 sm:text-[11px]"
                 style={{
                   background: theme.name === option ? theme.accentSoft : "transparent",
                   color: theme.name === option ? theme.accent : theme.muted,
@@ -167,15 +168,17 @@ export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
             type="button"
             onClick={handleClearChat}
             disabled={messages.length === 0}
-            className="rounded-full border px-3 py-2 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Clear chat"
+            className="rounded-full border px-2.5 py-1.5 text-xs transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:py-2 sm:text-sm"
             style={{ borderColor: theme.cardBorder, color: theme.muted, background: theme.card }}
           >
-            Clear
+            <span className="sm:hidden">🗑</span>
+            <span className="hidden sm:inline">Clear</span>
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-5">
+      <div className="flex-1 overflow-y-auto px-2 py-3 sm:px-4 sm:py-5">
         {messages.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -183,23 +186,23 @@ export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
             className="flex h-full flex-col justify-center"
           >
             <div
-              className="mx-auto flex w-full max-w-[360px] flex-col items-center rounded-[28px] border px-6 py-8 text-center"
+              className="mx-auto flex w-full max-w-[320px] flex-col items-center rounded-[24px] border px-4 py-6 text-center sm:max-w-[360px] sm:rounded-[28px] sm:px-6 sm:py-8"
               style={{ background: theme.card, borderColor: `${theme.accent}16`, boxShadow: `${theme.cardShadow}, inset 0 0 0 1px ${theme.accent}08` }}
             >
               <div
-                className="mb-5 flex h-20 w-20 items-center justify-center rounded-[24px] text-3xl"
+                className="mb-4 flex h-16 w-16 items-center justify-center rounded-[20px] text-2xl sm:mb-5 sm:h-20 sm:w-20 sm:rounded-[24px] sm:text-3xl"
                 style={{ background: theme.accentSoft, boxShadow: theme.insetShadow }}
               >
                 🤖
               </div>
-              <h2 className="text-2xl font-semibold" style={{ color: theme.text }}>
+              <h2 className="text-xl font-semibold sm:text-2xl" style={{ color: theme.text }}>
                 Hi, I&apos;m Shubham&apos;s AI Assistant
               </h2>
-              <p className="mt-2 text-sm leading-6" style={{ color: theme.muted }}>
+              <p className="mt-2 text-[13px] leading-5 sm:text-sm sm:leading-6" style={{ color: theme.muted }}>
                 Ask me anything about my projects, skills, internships and experience.
               </p>
 
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <div className="mt-5 flex flex-wrap justify-center gap-1.5 sm:mt-6 sm:gap-2">
                 {SUGGESTED_PROMPTS.map((prompt, index) => (
                   <motion.button
                     key={prompt}
@@ -211,7 +214,7 @@ export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
                     whileTap={{ scale: 0.97 }}
                     onClick={() => handleSuggestedPrompt(prompt)}
                     disabled={loading}
-                    className="rounded-full border px-3 py-2 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full border px-2.5 py-1.5 text-xs transition-all disabled:cursor-not-allowed disabled:opacity-60 sm:px-3 sm:py-2 sm:text-sm"
                     style={{ borderColor: theme.cardBorder, color: theme.text, background: theme.inputBg }}
                   >
                     {prompt}
@@ -232,7 +235,7 @@ export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-4 flex items-center gap-2 rounded-[22px] px-4 py-3 text-sm"
+                className="mb-4 flex items-center gap-2 rounded-[20px] px-3 py-2.5 text-sm sm:rounded-[22px] sm:px-4 sm:py-3"
                 style={{ background: theme.card, color: theme.muted, boxShadow: theme.cardShadow }}
               >
                 <span className="font-medium">Thinking</span>
@@ -255,7 +258,7 @@ export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
         )}
       </div>
 
-      <div className="border-t px-3 py-3 sm:px-4 sm:py-4" style={{ borderColor: `${theme.accent}18` }}>
+      <div className="safe-bottom border-t px-2 py-2 sm:px-4 sm:py-4" style={{ borderColor: `${theme.accent}18` }}>
           <div className="mx-auto max-w-[520px]">
           <ChatInput onSubmit={handleSendMessage} disabled={loading} theme={theme} onBookCall={() => setShowBookCallModal(true)} />
         </div>

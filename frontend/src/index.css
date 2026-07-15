@@ -206,3 +206,10 @@
     border-top-color: rgba(255, 255, 255, 0.1);
   }
 }
+
+@layer utilities {
+  /* Respect iOS notch / home indicator on notched devices in fullscreen / PWA mode. */
+  .safe-bottom {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}

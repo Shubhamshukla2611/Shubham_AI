@@ -146,14 +146,16 @@ export function ChatInput({ onSubmit, disabled, placeholder, theme, onBookCall }
     return () => clearAutoSendTimer();
   }, [clearAutoSendTimer]);
 
-  // Auto-resize the textarea to fit the text. Cap at ~6 lines so the input
-  // row doesn't dominate the screen during long dictation, and always keep
-  // a minimum height so an empty textarea stays visible.
+  // Auto-resize the textarea to fit the text. Cap based on viewport width so
+  // the input row doesn't dominate the screen on small devices, and always
+  // keep a minimum height so an empty textarea stays visible.
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
+    const maxHeight = window.matchMedia("(max-width: 640px)").matches ? 120 : 180;
+    const minHeight = window.matchMedia("(max-width: 640px)").matches ? 52 : 64;
     el.style.height = "auto";
-    el.style.height = `${Math.min(Math.max(el.scrollHeight, 64), 180)}px`;
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, minHeight), maxHeight)}px`;
   }, [message]);
 
   const submit = () => {
@@ -184,8 +186,10 @@ export function ChatInput({ onSubmit, disabled, placeholder, theme, onBookCall }
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
     const target = e.currentTarget;
+    const maxHeight = window.matchMedia("(max-width: 640px)").matches ? 120 : 180;
+    const minHeight = window.matchMedia("(max-width: 640px)").matches ? 52 : 64;
     target.style.height = "auto";
-    target.style.height = `${Math.min(Math.max(target.scrollHeight, 64), 180)}px`;
+    target.style.height = `${Math.min(Math.max(target.scrollHeight, minHeight), maxHeight)}px`;
   };
 
   const sendButton = (
@@ -194,16 +198,17 @@ export function ChatInput({ onSubmit, disabled, placeholder, theme, onBookCall }
       whileHover={{ scale: 1.03, y: -1 }}
       whileTap={{ scale: 0.95 }}
       disabled={disabled}
-      className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white shadow-[0_16px_36px_rgba(109,93,252,0.26)] transition-all disabled:cursor-not-allowed disabled:opacity-60"
+      aria-label="Send message"
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-[0_12px_24px_rgba(109,93,252,0.22)] transition-all disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-14 sm:shadow-[0_16px_36px_rgba(109,93,252,0.26)]"
       style={{ background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentTwo} 100%)` }}
     >
       {disabled ? (
-        <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+        <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
           <circle cx="12" cy="12" r="10" opacity="0.25" />
           <path d="M22 12a10 10 0 00-10-10" />
         </svg>
       ) : (
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <line x1="5" y1="12" x2="19" y2="12" />
           <polyline points="12 5 19 12 12 19" />
         </svg>
@@ -232,7 +237,7 @@ export function ChatInput({ onSubmit, disabled, placeholder, theme, onBookCall }
       }
       whileHover={isSupported ? { scale: 1.03, y: -1 } : undefined}
       whileTap={isSupported ? { scale: 0.95 } : undefined}
-      className="relative inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white shadow-[0_16px_36px_rgba(109,93,252,0.26)] transition-all disabled:cursor-not-allowed disabled:opacity-60"
+      className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-[0_12px_24px_rgba(109,93,252,0.22)] transition-all disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-14 sm:shadow-[0_16px_36px_rgba(109,93,252,0.26)]"
       style={{ background: micGradient }}
     >
       {isListening && (
@@ -244,13 +249,13 @@ export function ChatInput({ onSubmit, disabled, placeholder, theme, onBookCall }
       )}
       {isListening ? (
         // Stop icon — a rounded square (white on the gradient).
-        <svg className="relative h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+        <svg className="relative h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
           <rect x="6" y="6" width="12" height="12" rx="3" />
         </svg>
       ) : (
         // Mic icon.
         <svg
-          className="relative h-6 w-6"
+          className="relative h-5 w-5 sm:h-6 sm:w-6"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -270,7 +275,7 @@ export function ChatInput({ onSubmit, disabled, placeholder, theme, onBookCall }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-1.5 sm:gap-2">
         <textarea
           ref={textareaRef}
           value={message}
@@ -279,7 +284,7 @@ export function ChatInput({ onSubmit, disabled, placeholder, theme, onBookCall }
           onKeyDown={handleKeyDown}
           onChange={handleChange}
           rows={1}
-          className="min-h-[64px] w-full resize-none rounded-[24px] border px-5 py-3.5 text-[15px] leading-7 outline-none transition-all duration-200 focus:ring-2 focus:ring-offset-0"
+          className="min-h-[52px] w-full min-w-0 resize-none rounded-[20px] border px-4 py-3 text-base leading-6 outline-none transition-all duration-200 focus:ring-2 focus:ring-offset-0 sm:min-h-[64px] sm:rounded-[24px] sm:px-5 sm:py-3.5 sm:text-[15px] sm:leading-7"
           style={{
             background: theme.inputBg,
             borderColor: isListening ? `${theme.accent}66` : `${theme.accent}18`,
@@ -299,11 +304,12 @@ export function ChatInput({ onSubmit, disabled, placeholder, theme, onBookCall }
             disabled={disabled}
             whileHover={{ scale: 1.03, y: -1 }}
             whileTap={{ scale: 0.95 }}
+            aria-label="Book a call with Shubham"
             title="Book a call with Shubham"
-            className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white shadow-[0_16px_36px_rgba(109,93,252,0.26)] transition-all disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-[0_12px_24px_rgba(109,93,252,0.22)] transition-all disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-14 sm:shadow-[0_16px_36px_rgba(109,93,252,0.26)]"
             style={{ background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentTwo} 100%)` }}
           >
-            <span className="text-xl">📞</span>
+            <span className="text-base sm:text-xl">📞</span>
           </motion.button>
         )}
         {sendButton}

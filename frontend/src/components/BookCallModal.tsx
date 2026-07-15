@@ -107,7 +107,7 @@ export function BookCallModal({
             className="fixed inset-0 flex items-center justify-center z-50 p-4"
           >
             <div
-              className="rounded-2xl p-6 max-w-md w-full shadow-xl border"
+              className="rounded-2xl p-5 max-w-md w-full shadow-xl border sm:p-6"
               style={{
                 background: theme.card,
                 borderColor: theme.cardBorder,
@@ -286,7 +286,7 @@ export function BookCallModal({
                         Call this number:
                       </p>
                       <p
-                        className="text-3xl font-bold tracking-wider"
+                        className="text-2xl font-bold tracking-wider break-all sm:text-3xl"
                         style={{ color: theme.accent }}
                       >
                         {phoneNumber}
