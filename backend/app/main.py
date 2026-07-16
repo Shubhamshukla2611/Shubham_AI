@@ -145,24 +145,6 @@ def create_app() -> FastAPI:
             "api_key_configured": settings.is_api_key_configured,
         }
 
-    @app.get("/debug/paths", tags=["debug"])
-    async def debug_paths() -> dict:
-        """Return filesystem layout info — used to diagnose deploys."""
-        import os
-        backend_root = Path(__file__).resolve().parent.parent
-        return {
-            "cwd": os.getcwd(),
-            "backend_root": str(backend_root),
-            "backend_root_exists": backend_root.exists(),
-            "raw_dir": str(backend_root / "data" / "raw"),
-            "raw_dir_exists": (backend_root / "data" / "raw").exists(),
-            "index_dir": str(backend_root / "data" / "index"),
-            "index_dir_exists": (backend_root / "data" / "index").exists(),
-            "app_dir_contents": sorted(p.name for p in backend_root.iterdir())[:50] if backend_root.exists() else [],
-            "raw_dir_contents": sorted(p.name for p in (backend_root / "data" / "raw").iterdir()) if (backend_root / "data" / "raw").exists() else [],
-            "data_dir_contents": sorted(p.name for p in (backend_root / "data").iterdir()) if (backend_root / "data").exists() else [],
-        }
-
     app.include_router(chat_router)
     app.include_router(voice_router)
 
