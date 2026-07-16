@@ -30,11 +30,15 @@ interface ChatTheme {
   online: string;
   blobA: string;
   blobB: string;
+  strandColors: string[];
+  strandOpacity: number;
 }
+
+type ThemeName = "light" | "dark" | "purple";
 
 interface ChatContainerProps {
   theme: ChatTheme;
-  onThemeChange: (theme: "light" | "dark" | "purple") => void;
+  onThemeChange: (theme: ThemeName) => void;
 }
 
 const SUGGESTED_PROMPTS = [
@@ -147,20 +151,26 @@ export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <div className="flex items-center gap-0.5 rounded-full border p-0.5 sm:gap-1 sm:p-1" style={{ borderColor: `${theme.accent}18`, background: theme.card }}>
-            {(["light", "dark"] as const).map((option) => (
+            {(
+              [
+                { id: "light", label: "Light theme", icon: "☀️" },
+                { id: "purple", label: "Purple theme", icon: "💜" },
+                { id: "dark", label: "Dark theme", icon: "🌙" },
+              ] as const
+            ).map((option) => (
               <button
-                key={option}
+                key={option.id}
                 type="button"
-                onClick={() => onThemeChange(option)}
-                aria-label={option === "light" ? "Light theme" : "Dark theme"}
+                onClick={() => onThemeChange(option.id)}
+                aria-label={option.label}
                 className="rounded-full px-2 py-1 text-[10px] font-medium transition-all sm:px-2.5 sm:py-1.5 sm:text-[11px]"
                 style={{
-                  background: theme.name === option ? theme.accentSoft : "transparent",
-                  color: theme.name === option ? theme.accent : theme.muted,
-                  border: theme.name === option ? `1px solid ${theme.accent}20` : "1px solid transparent",
+                  background: theme.name === option.id ? theme.accentSoft : "transparent",
+                  color: theme.name === option.id ? theme.accent : theme.muted,
+                  border: theme.name === option.id ? `1px solid ${theme.accent}20` : "1px solid transparent",
                 }}
               >
-                {option === "light" ? "☀️" : "🌙"}
+                {option.icon}
               </button>
             ))}
           </div>

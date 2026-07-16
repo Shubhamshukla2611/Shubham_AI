@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChatContainer } from "./components/ChatContainer";
+import Strands from "./components/Strands";
 
 type ThemeName = "light" | "dark" | "purple";
 
@@ -27,6 +28,10 @@ interface ChatTheme {
   online: string;
   blobA: string;
   blobB: string;
+  /** Hex colors used to drive the animated Strands background. */
+  strandColors: string[];
+  /** How loud the Strands effect is per theme (light is subtler than dark). */
+  strandOpacity: number;
 }
 
 const THEMES: Record<ThemeName, ChatTheme> = {
@@ -54,6 +59,8 @@ const THEMES: Record<ThemeName, ChatTheme> = {
     online: "#22c55e",
     blobA: "rgba(124,92,255,0.16)",
     blobB: "rgba(255,255,255,0.85)",
+    strandColors: ["#7c5cff", "#06b6d4", "#f472b6", "#facc15"],
+    strandOpacity: 0.55,
   },
   dark: {
     name: "dark",
@@ -79,6 +86,8 @@ const THEMES: Record<ThemeName, ChatTheme> = {
     online: "#4ade80",
     blobA: "rgba(139,124,255,0.16)",
     blobB: "rgba(15,23,42,0.65)",
+    strandColors: ["#8b7cff", "#22d3ee", "#f472b6", "#facc15"],
+    strandOpacity: 0.85,
   },
   purple: {
     name: "purple",
@@ -104,6 +113,8 @@ const THEMES: Record<ThemeName, ChatTheme> = {
     online: "#22c55e",
     blobA: "rgba(109,79,242,0.2)",
     blobB: "rgba(255,255,255,0.9)",
+    strandColors: ["#6d4ff2", "#a855f7", "#ec4899", "#38bdf8"],
+    strandOpacity: 0.7,
   },
 };
 
@@ -125,11 +136,44 @@ function App() {
 
   const theme = THEMES[themeName];
 
+  // Tune the animated Strands backdrop per theme. The shader is
+  // deterministic, so the same set of props always renders the same
+  // pattern; the only thing that changes when the user switches theme
+  // is the colour palette and overall opacity / speed.
+  const strands = useMemo(
+    () => ({
+      colors: theme.strandColors,
+      count: theme.name === "dark" ? 5 : 4,
+      speed: theme.name === "light" ? 0.35 : 0.55,
+      amplitude: theme.name === "light" ? 0.7 : 1.0,
+      waviness: 1.1,
+      thickness: 0.75,
+      glow: 2.4,
+      taper: 3.2,
+      spread: theme.name === "dark" ? 1.1 : 0.9,
+      intensity: theme.name === "light" ? 0.45 : 0.7,
+      saturation: 1.4,
+      opacity: theme.strandOpacity,
+      scale: theme.name === "light" ? 1.8 : 1.4,
+    }),
+    [theme],
+  );
+
   return (
     <div
       className="relative min-h-[100dvh] overflow-hidden px-2 py-0 text-slate-900 sm:px-4 sm:py-4 lg:px-6 lg:py-6"
       style={{ background: theme.background }}
     >
+      {/* Animated Strands background — sits behind the chat shell and the
+          ambient blobs. `pointer-events-none` keeps it purely decorative. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        aria-hidden="true"
+      >
+        <Strands {...strands} />
+      </div>
+
+      {/* Soft ambient blobs on top of the strands for depth. */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
           className="absolute left-[-8%] top-[-6%] h-56 w-56 rounded-full blur-3xl"
