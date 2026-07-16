@@ -31,9 +31,9 @@ build/
 #backend/data/index/*
 #!backend/data/index/.gitkeep
 
-# Keep raw data folder but ignore its contents (resume is private)
-backend/data/raw/*
-!backend/data/raw/.gitkeep
+# Raw data folder is committed — Render needs the .md / .pdf files
+# to build the Chroma index at startup. If you add new private docs
+# here, add an explicit ignore line below instead of globbing.
 
 # ──────────────────────────────────────────────
 # Node / Frontend
