@@ -145,7 +145,7 @@ Answer the query using ONLY the context above. If the answer is not in the conte
         )
 
         try:
-            response_cm = self._async_client.chat.completions.create(
+            response_cm = self._async_client.with_streaming_response.chat.completions.create(
                 model=self._model,
                 messages=[{"role": "user", "content": full_prompt}],
                 temperature=self.GENERATION_TEMPERATURE,
@@ -153,7 +153,8 @@ Answer the query using ONLY the context above. If the answer is not in the conte
                 stream=True,
             )
             async with response_cm as response:
-                async for chunk in response:
+                stream = await response.parse()
+                async for chunk in stream:
                     if not chunk.choices:
                         continue
                     delta = chunk.choices[0].delta
