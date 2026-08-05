@@ -10,7 +10,9 @@ hallucination and encourage strict adherence to the system prompt.
 
 from __future__ import annotations
 
-from groq import Groq
+from typing import AsyncIterator
+
+from groq import AsyncGroq, Groq
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -38,6 +40,7 @@ class Generator:
         self._model = model
         try:
             self._client = Groq(api_key=self._api_key)
+            self._async_client = AsyncGroq(api_key=self._api_key)
         except Exception as exc:
             raise RuntimeError(
                 f"Failed to initialize Groq client: {exc}. "
@@ -114,6 +117,53 @@ Answer the query using ONLY the context above. If the answer is not in the conte
         except Exception as exc:
             logger.error("Generate failed: %s", exc)
             raise RuntimeError(f"Failed to generate answer: {exc}") from exc
+
+    async def generate_stream(self, query: str, context_chunks: list) -> AsyncIterator[dict]:
+        """Stream generated tokens from Groq for the given query/context."""
+        if not context_chunks:
+            logger.info("Generate stream called with empty context | returning refusal")
+            yield {"type": "delta", "text": REFUSAL_PHRASE}
+            yield {"type": "done"}
+            return
+
+        context_text = self._format_context(context_chunks)
+        full_prompt = f"""{SYSTEM_PROMPT}
+
+Query: {query}
+
+<context>
+{context_text}
+</context>
+
+Answer the query using ONLY the context above. If the answer is not in the context, respond with the refusal phrase."""
+
+        logger.info(
+            "Generate stream | model=%s query_len=%d context_chunks=%d",
+            self._model,
+            len(query),
+            len(context_chunks),
+        )
+
+        try:
+            response_cm = self._async_client.chat.completions.create(
+                model=self._model,
+                messages=[{"role": "user", "content": full_prompt}],
+                temperature=self.GENERATION_TEMPERATURE,
+                max_tokens=self.GENERATION_MAX_TOKENS,
+                stream=True,
+            )
+            async with response_cm as response:
+                async for chunk in response:
+                    if not chunk.choices:
+                        continue
+                    delta = chunk.choices[0].delta
+                    if not delta:
+                        continue
+                    if delta.content:
+                        yield {"type": "delta", "text": delta.content}
+        except Exception as exc:
+            logger.error("Generate stream failed: %s", exc)
+            raise RuntimeError(f"Failed to stream answer: {exc}") from exc
 
     @staticmethod
     def _format_context(chunks: list) -> str:

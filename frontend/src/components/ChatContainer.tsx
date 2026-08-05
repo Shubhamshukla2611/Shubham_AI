@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
 import { BookCallModal } from "./BookCallModal";
-import ShapeBlur from "./ShapeBlur";
 import type { ChatMessage } from "@/types";
 import { chatAPI } from "@/services/api";
 
@@ -52,88 +51,11 @@ const SUGGESTED_PROMPTS = [
 
 const VAPI_PHONE_NUMBER = "+1 (346) 363-6616";
 
-/**
- * Interactive cursor-following glow. Renders a transparent ShapeBlur
- * overlay whose `u_mouse` tracks the pointer. Disabled on coarse /
- * touch-only pointers so it never fights a thumb, and clipped to the
- * container so the glow can't leak past the chat shell.
- *
- * The layer is `pointer-events-none` so it never blocks clicks; the
- * actual hit testing happens on the elements underneath.
- */
-function HoverGlow({ accent, enabled }: { accent: string; enabled: boolean }) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const [isFine, setIsFine] = useState(false);
-  const [variant, setVariant] = useState<0 | 1 | 2 | 3>(0);
-
-  // Pick the ShapeBlur shape per theme so dark/purple/light get
-  // slightly different silhouettes, and only enable on devices that
-  // have a precise pointer (no hover glow on phones / tablets).
-  useEffect(() => {
-    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
-    setIsFine(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setIsFine(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  useEffect(() => {
-    setVariant(enabled ? 0 : 3);
-  }, [enabled]);
-
-  if (!isFine) return null;
-
-  return (
-    <div
-      ref={wrapperRef}
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 overflow-hidden"
-      style={{ mixBlendMode: "screen" }}
-    >
-      {/* ShapeBlur uses a `document` mousemove listener to compute u_mouse,
-          but its WebGL output is sized to its own bounding box. The
-          cursor coords are mapped to (mountX, mountY) inside the shader
-          automatically, so as long as the wrapper covers the chat
-          shell, the glow follows the pointer correctly. */}
-      <div
-        className="absolute inset-0"
-        style={{
-          opacity: enabled ? 0.85 : 0,
-          transition: "opacity 400ms ease",
-          // The shader outputs pure white; the wrapper tints the result
-          // through blend-mode + a faint accent wash via a CSS overlay.
-        }}
-      >
-        <ShapeBlur
-          variation={variant}
-          pixelRatioProp={Math.min(window.devicePixelRatio || 1, 2)}
-          shapeSize={0.6}
-          roundness={0.5}
-          borderSize={0.05}
-          circleSize={0.4}
-          circleEdge={0.5}
-        />
-      </div>
-      {/* A subtle accent-tinted wash on top of the white ShapeBlur
-          output, so the glow picks up the theme colour instead of
-          being a flat white halo. */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `radial-gradient(circle at 50% 50%, ${accent}55 0%, transparent 60%)`,
-          mixBlendMode: "multiply",
-        }}
-      />
-    </div>
-  );
-}
-
 export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showBookCallModal, setShowBookCallModal] = useState(false);
-  const [hoverActive, setHoverActive] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -154,28 +76,50 @@ export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const assistantId = `assistant-${Date.now()}`;
+    const assistantMessage: ChatMessage = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setLoading(true);
 
     try {
-      const response = await chatAPI.sendMessage(content);
-
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: response.answer,
-        sources: response.sources,
-        booking_url: response.booking_url,
-        meeting_url: response.meeting_url,
-        owner_email: response.owner_email,
-        interviewer_email: response.interviewer_email,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
+      await chatAPI.sendMessageStream(
+        content,
+        (delta) => {
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === assistantId
+                ? { ...message, content: message.content + delta }
+                : message,
+            ),
+          );
+        },
+        (payload) => {
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === assistantId
+                ? {
+                    ...message,
+                    sources: payload.sources ?? [],
+                    booking_url: payload.booking_url,
+                    meeting_url: payload.meeting_url,
+                    owner_email: payload.owner_email,
+                    interviewer_email: payload.interviewer_email,
+                  }
+                : message,
+            ),
+          );
+        },
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message");
       console.error("Chat error:", err);
+      setMessages((prev) => prev.filter((message) => message.id !== assistantId));
     } finally {
       setLoading(false);
     }
@@ -196,23 +140,15 @@ export function ChatContainer({ theme, onThemeChange }: ChatContainerProps) {
 
   return (
     <div
-      className="relative flex h-[100dvh] flex-col overflow-hidden rounded-none border p-1.5 shadow-[12px_12px_24px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:h-[92vh] sm:max-h-[900px] sm:rounded-[32px] sm:p-2"
+      className="flex h-[100dvh] flex-col overflow-hidden rounded-none border p-1.5 shadow-[12px_12px_24px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:h-[92vh] sm:max-h-[900px] sm:rounded-[32px] sm:p-2"
       style={{
         background: theme.shell,
         borderColor: `${theme.accent}20`,
         boxShadow: `${theme.shellShadow}, inset 0 0 0 1px ${theme.accent}10`,
       }}
-      onMouseEnter={() => setHoverActive(true)}
-      onMouseLeave={() => setHoverActive(false)}
     >
-      {/* Mouse-following glow that tracks the pointer inside the chat
-          shell. The ShapeBlur output is white; a CSS tint on top makes
-          it pick up the theme accent. Disabled on touch / coarse
-          pointers inside HoverGlow itself. */}
-      <HoverGlow accent={theme.accent} enabled={hoverActive} />
-
       <div
-        className="sticky top-0 z-20 flex items-center justify-between border-b px-3 py-3 sm:px-5 sm:py-4"
+        className="sticky top-0 z-10 flex items-center justify-between border-b px-3 py-3 sm:px-5 sm:py-4"
         style={{ borderColor: `${theme.accent}18`, background: `${theme.shell}f0` }}
       >
         <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">

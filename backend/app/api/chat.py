@@ -8,9 +8,11 @@ startup and reused for every request.
 
 from __future__ import annotations
 
+from json import dumps
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -172,4 +174,55 @@ async def chat(request: ChatRequest) -> ChatResponse:
         meeting_url=result.get("meeting_url"),
         owner_email=result.get("owner_email"),
         interviewer_email=result.get("interviewer_email"),
+    )
+
+
+@router.post(
+    "/chat/stream",
+    summary="Stream a message to the persona chatbot",
+    description=(
+        "Accepts a user message, retrieves relevant context, and streams "
+        "the generated answer token-by-token as server-sent events."
+    ),
+)
+async def chat_stream(request: ChatRequest) -> StreamingResponse:
+    if not request.message.strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
+
+    try:
+        rag = _get_rag_pipeline()
+    except RuntimeError as exc:
+        msg = str(exc)
+        if "Vector store not built" in msg:
+            logger.warning("Index missing — attempting on-demand auto-ingest")
+            try:
+                from app.main import _auto_ingest_if_needed
+                _auto_ingest_if_needed(logger)
+                rag = _get_rag_pipeline()
+            except Exception as inner:
+                logger.exception("On-demand auto-ingest failed: %s", inner)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Index unavailable and auto-ingest failed: {inner}",
+                ) from inner
+        else:
+            logger.error("RAG pipeline initialization failed: %s", exc)
+            raise HTTPException(
+                status_code=500,
+                detail=msg,
+            ) from exc
+
+    async def event_generator():
+        try:
+            async for event in rag.answer_stream(request.message):
+                yield f"data: {dumps(event)}\n\n"
+        except Exception as exc:
+            logger.exception("Streaming response failed: %s", exc)
+            error_event = {"type": "error", "message": "Failed to process your question. Please try again."}
+            yield f"data: {dumps(error_event)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

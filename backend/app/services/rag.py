@@ -9,6 +9,8 @@ Combines retriever + generator into a single `answer()` call that:
 
 from __future__ import annotations
 
+from typing import AsyncIterator
+
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.services.generator import Generator
@@ -102,6 +104,84 @@ class RAGPipeline:
 
         return {
             "answer": answer,
+            "sources": sources,
+            "booking_url": None,
+            "meeting_url": None,
+            "owner_email": None,
+            "interviewer_email": None,
+        }
+
+    async def answer_stream(self, query: str) -> AsyncIterator[dict]:
+        """Stream a RAG answer event-by-event."""
+        logger.info("RAGPipeline.answer_stream | query_len=%d", len(query))
+
+        booking_response = self._calendar_booking_answer(query)
+        if booking_response is not None:
+            logger.info("Calendar booking intent detected")
+            yield {"type": "delta", "text": booking_response["answer"]}
+            yield {
+                "type": "done",
+                "sources": booking_response["sources"],
+                "booking_url": booking_response["booking_url"],
+                "meeting_url": booking_response["meeting_url"],
+                "owner_email": booking_response["owner_email"],
+                "interviewer_email": booking_response["interviewer_email"],
+            }
+            return
+
+        fallback_answer = self._generic_persona_answer(query)
+        if fallback_answer is not None:
+            logger.info("Generic persona fallback used")
+            yield {"type": "delta", "text": fallback_answer}
+            yield {
+                "type": "done",
+                "sources": [],
+                "booking_url": None,
+                "meeting_url": None,
+                "owner_email": None,
+                "interviewer_email": None,
+            }
+            return
+
+        try:
+            retrieval_results = self._retriever.retrieve(query)
+        except ValueError as exc:
+            logger.warning("Retrieval failed: %s", exc)
+            yield {
+                "type": "done",
+                "answer": "Your question was too short. Please ask something more specific.",
+                "sources": [],
+                "booking_url": None,
+                "meeting_url": None,
+                "owner_email": None,
+                "interviewer_email": None,
+            }
+            return
+
+        logger.info("Retrieve OK | chunks=%d", len(retrieval_results))
+
+        try:
+            async for event in self._generator.generate_stream(query, retrieval_results):
+                yield event
+        except RuntimeError as exc:
+            logger.error("Streaming generation failed: %s", exc)
+            yield {
+                "type": "error",
+                "message": "I encountered an error while generating the answer. Please try again.",
+            }
+            return
+
+        sources = [
+            {
+                "source": r.chunk.source,
+                "content": r.chunk.text,
+                "score": r.score,
+            }
+            for r in retrieval_results
+        ]
+
+        yield {
+            "type": "done",
             "sources": sources,
             "booking_url": None,
             "meeting_url": None,
